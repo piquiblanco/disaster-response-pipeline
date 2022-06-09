@@ -31,14 +31,12 @@ def load_data(database_filepath):
     """
     engine = create_engine(f"sqlite:///{database_filepath}")
     df = pd.read_sql("messages", engine)
+    X = df["message"]
+    y = df.drop(columns=["message", "id", "original", "genre"])
     infrequent_labels = y.sum()[y.sum() < 10].index.tolist()
-    return (
-        df["message"],
-        df.drop(columns=["message", "id", "original", "genre"] + infrequent_labels),
-        df.drop(
-            columns=["me9ssage", "id", "original", "genre"] + infrequent_labels
-        ).columns,
-    )
+    y.drop(columns=infrequent_labels, inplace=True)
+    y[y > 1] = 1
+    return (X, y, y.columns)
 
 
 def tokenize(text):
@@ -72,7 +70,6 @@ def build_model():
                     estimator=RandomForestClassifier(
                         class_weight="balanced", n_estimators=200, max_depth=3,
                     ),
-                    n_jobs=-1,
                 ),
             ),
         ],
@@ -82,7 +79,6 @@ def build_model():
 
 
 def evaluate_model(model, X, y, database_filepath):
-
     """
     Function evaluates model with accuracy metric; provides counts from the confusion matrix.
     """
@@ -118,7 +114,6 @@ def evaluate_model(model, X, y, database_filepath):
 
 def save_model(model, model_filepath):
     """Perform pickle dump of the model"""
-
     pickle.dump(model, open(model_filepath, "wb"))
 
 
