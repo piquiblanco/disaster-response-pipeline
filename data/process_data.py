@@ -7,6 +7,9 @@ from sqlalchemy import create_engine
 
 
 def load_data(messages_filepath, categories_filepath):
+    """
+    Function loads datasets according to specified paths and returns a merged dataset.
+    """
     # load messages dataset
     messages = pd.read_csv(messages_filepath)
 
@@ -18,22 +21,31 @@ def load_data(messages_filepath, categories_filepath):
 
 
 def clean_data(df):
+    """
+    The function removes duplicates and converts exogenous variables to binary.
+    """
     categories = df.categories.str.split(";", expand=True)
     row = categories.loc[0]
     category_colnames = [x[:-2] for x in row.tolist()]
     categories.columns = category_colnames
     for column in categories:
+        print(column)
         # set each value to be the last character of the string
         categories[column] = categories[column].apply(lambda x: x[-1])
         # convert column from string to numeric
         categories[column] = categories[column].astype("int")
+        categories.loc[categories[column] > 1, column] = 1
     df.drop(columns="categories", inplace=True)
     df = pd.concat([df, categories], axis=1)
     df.drop_duplicates(inplace=True)
+    # df[df > 1] = 1  # convert to binary
     return df
 
 
 def save_data(df, database_filename):
+    """
+    The function saves data in a database which path is specified in the function argument.
+    """
     engine = create_engine(f"sqlite:///{database_filename}")
     df.to_sql("messages", engine, index=False, if_exists="replace")
     print(pd.read_sql("messages", engine).head())

@@ -1,4 +1,6 @@
 # Disaster Response Pipeline Project
+Project contains a Flask App which you can use to categorize different messages depending on their topic within area of disaster responses. The repository also contains a dataset of training data, as well as pipeline with classification models used to predict labels for new messages.
+
 
 ### Instructions:
 1. Run the following commands in the project's root directory to set up your database and model.

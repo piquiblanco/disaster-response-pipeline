@@ -33,9 +33,6 @@ def load_data(database_filepath):
     df = pd.read_sql("messages", engine)
     X = df["message"]
     y = df.drop(columns=["message", "id", "original", "genre"])
-    infrequent_labels = y.sum()[y.sum() < 10].index.tolist()
-    y.drop(columns=infrequent_labels, inplace=True)
-    y[y > 1] = 1
     return (X, y, y.columns)
 
 
@@ -105,6 +102,7 @@ def evaluate_model(model, X, y, database_filepath):
         conf_dict = {ind: conf[ind] for ind in conf.index}
         rep.update(conf_dict)
         reports.append(pd.Series(rep))
+        print(pd.Series(rep))
 
     df_report = np.round(pd.DataFrame(reports).set_index("feature"), 2)
     engine = create_engine(f"sqlite:///{database_filepath}")
