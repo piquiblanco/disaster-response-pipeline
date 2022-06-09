@@ -26,6 +26,9 @@ from sqlalchemy import create_engine
 
 
 def load_data(database_filepath):
+    """
+    Functions loads data from the specified database and cleans them before returning endogenous and exogenous variables separately.
+    """
     engine = create_engine(f"sqlite:///{database_filepath}")
     df = pd.read_sql("messages", engine)
     infrequent_labels = y.sum()[y.sum() < 10].index.tolist()
@@ -39,6 +42,9 @@ def load_data(database_filepath):
 
 
 def tokenize(text):
+    """
+    Function tokenizes text in preparation for tf-idf embedding. Takes in text and returns clean text
+    """
     tokens = word_tokenize(text)
     lemmatizer = WordNetLemmatizer()
 
@@ -51,6 +57,9 @@ def tokenize(text):
 
 
 def build_model():
+    """
+    Function creates a pipeline of tf-idf and classification; returns a model ready to train.
+    """
     model = Pipeline(
         [
             (
@@ -61,7 +70,7 @@ def build_model():
                 "classifier",
                 MultiOutputClassifier(
                     estimator=RandomForestClassifier(
-                        class_weight="balanced", n_estimators=200, max_depth=5,
+                        class_weight="balanced", n_estimators=200, max_depth=3,
                     ),
                     n_jobs=-1,
                 ),
@@ -72,8 +81,11 @@ def build_model():
     return model
 
 
-def evaluate_model(model, X, y, database_filepath) -> pd.DataFrame:
+def evaluate_model(model, X, y, database_filepath):
 
+    """
+    Function evaluates model with accuracy metric; provides counts from the confusion matrix.
+    """
     predictions = model.predict(X)
     predictions = pd.DataFrame(predictions, columns=y.columns)
 
@@ -92,22 +104,15 @@ def evaluate_model(model, X, y, database_filepath) -> pd.DataFrame:
 
         # Confusion matrix:
         conf = pd.Series(
-            confusion_matrix(ylab, predlab).ravel()  # , index=["tn", "fp", "fn", "tp"]
+            confusion_matrix(ylab, predlab).ravel(), index=["tn", "fp", "fn", "tp"]
         )
         conf_dict = {ind: conf[ind] for ind in conf.index}
         rep.update(conf_dict)
         reports.append(pd.Series(rep))
-        # print(pd.Series(rep))
 
-    df_report = np.round(pd.DataFrame(reports).set_index("feature"), 3)
-    # df_report.insert(0, "training_timestamp", dt.now().strftime("%Y-%m-%d, %H:%M:%S"))
-    # report_filename = 'evaluation_report.csv'
+    df_report = np.round(pd.DataFrame(reports).set_index("feature"), 2)
     engine = create_engine(f"sqlite:///{database_filepath}")
     df_report.to_sql("model_evaluation", engine, index=False, if_exists="replace")
-    # if report_filename in os.listdir(os.getcwd()):
-    #     df_report.to_csv(report_filename, mode='a', header=False)
-    # else:
-    #     df_report.to_csv(report_filename)
     return df_report
 
 
