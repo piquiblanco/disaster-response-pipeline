@@ -17,11 +17,9 @@ from sklearn.metrics import (
     precision_score,
     recall_score,
 )
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.multioutput import MultiOutputClassifier
 from sklearn.pipeline import Pipeline
-from skopt import BayesSearchCV
-from skopt.space import Categorical, Integer, Real
 from sqlalchemy import create_engine
 
 
@@ -72,7 +70,12 @@ def build_model():
         ],
         verbose=True,
     )
-    return model
+    param_grid = {
+        "classifier__estimator__max_depth": [2, 4, 6],
+        "classifier__estimator__n_estimators": [20, 30, 40, 50],
+    }
+    search = GridSearchCV(model, param_grid, cv=5)
+    return search
 
 
 def evaluate_model(model, X, y, database_filepath):
@@ -97,7 +100,8 @@ def evaluate_model(model, X, y, database_filepath):
 
         # Confusion matrix:
         conf = pd.Series(
-            confusion_matrix(ylab, predlab).ravel(), index=["tn", "fp", "fn", "tp"]
+            np.append(confusion_matrix(ylab, predlab).ravel(), [0, 0, 0, 0])[0:4],
+            index=["tn", "fp", "fn", "tp"],
         )
         conf_dict = {ind: conf[ind] for ind in conf.index}
         rep.update(conf_dict)

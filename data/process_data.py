@@ -38,7 +38,6 @@ def clean_data(df):
     df.drop(columns="categories", inplace=True)
     df = pd.concat([df, categories], axis=1)
     df.drop_duplicates(inplace=True)
-    # df[df > 1] = 1  # convert to binary
     return df
 
 
